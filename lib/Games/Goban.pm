@@ -5,12 +5,24 @@ use 5.006;
 use strict;
 use warnings;
 use Carp;
-our $VERSION = '0.05';
-my %types = (
-    go		=> 1,
-    othello	=> 2,
-    renju	=> 4,
-    gomoku	=> 4,
+our $VERSION = sprintf "%d.%03d", q$Revision: 1.4 $ =~ /(\d+)/g;
+
+our $piececlass = 'Games::Goban::Piece';
+
+our %types = (
+  go      => 1,
+  othello => 2,
+  renju   => 4,
+  gomoku  => 4,
+);
+
+our %defaults = (
+  game    => 'go',
+  size    => 19,
+  white   => 'Miss White',
+  black   => 'Mr. Black',
+  skip_i  => 0,
+  referee => sub { 1 }
 );
 
 =head1 NAME
@@ -21,11 +33,11 @@ Games::Goban - Board for playing go, renju, othello, etc.
 
   use Games::Goban;
   my $board = new Games::Goban ( 
-                size => 19,
-                game => "go",
-                white => "Seigen, Go",
-                black => "Minoru, Kitani",
-                referee => \&Games::Goban::Rules::Go,
+	size  => 19,
+	game  => "go",
+	white => "Seigen, Go",
+	black => "Minoru, Kitani",
+	referee => \&Games::Goban::Rules::Go,
   );
 
   $board->move("pd"); $board->move("dd");
@@ -45,12 +57,12 @@ restricted in order to keep it simple.
 Creates and initializes a new goban. The options and their legal
 values (* marks defaults):
 
-    size       Any integer between 5 and 26, default: 19
-    game       *go, othello, renju, gomoku
-    white      Any text, default: "Miss White"
-    black      Any text, default: "Mr Black"
-	skip_i     Truth value; whether 'i' should be skipped; false by default
-    referee    Any subroutine, default: sub {1} # (All moves are valid) 
+  size       Any integer between 5 and 26, default: 19
+  game       *go, othello, renju, gomoku
+  white      Any text, default: "Miss White"
+  black      Any text, default: "Mr Black"
+  skip_i     Truth value; whether 'i' should be skipped; false by default
+  referee    Any subroutine, default: sub {1} # (All moves are valid) 
 
 The referee subroutine takes a board object and a piece object, and
 determines whether or not the move is legal. It also reports if the
@@ -58,35 +70,35 @@ game is won.
 
 =cut
 
-sub new { 
-    my $class = shift;
-    my %opts = @_;
-    my $size = $opts{size} || 19;
-	unless (($size !~ /\D/) and ($size > 4) and ($size <= 26)) {
-        croak "Illegal size $size (must be integer > 4)";
-    }
+sub new {
+  my $class = shift;
+  my %opts = (%defaults, @_);
 
-    my $game = lc $opts{game} || 'go';
-    croak "Unknown game $game" unless exists $types{$game};
-    
-    my $board = bless {
-        game => $game,
-        moves => [],
-        size => $size,
-        black => $opts{black} || "Mr. Black",
-        white => $opts{white} || "Miss White",
-        callbacks => {},
-        referee => $opts{referee} || sub { 1 },
-        move => 1,
-        magiccookie => "a0000",
-        turn => 'b',
-		skip_i => (defined $opts{skip_i} ? $opts{skip_i} : 0)
-    }, $class;
+  unless (($opts{size} !~ /\D/) and ($opts{size} > 4) and ($opts{size} <= 26)) {
+	croak "Illegal size $opts{size} (must be integer > 4)";
+  }
 
-	for (0 .. ($size-1)) { push @{$board->{board}}, [ (undef) x $size ]; }
-	$board->{hoshi} = $board->_calc_hoshi;
+  $opts{game} = lc $opts{game};
+  croak "Unknown game $opts{game}" unless exists $types{$opts{game}};
 
-	return $board;
+  my $board = bless {
+	move  => 1,
+	moves => [],
+	turn  => 'b',
+	game  => $opts{game},
+	size  => $opts{size},
+	black => $opts{black},
+	white => $opts{white},
+	skip_i  => $opts{skip_i},
+	referee => $opts{referee},
+	callbacks   => {},
+	magiccookie => "a0000",
+  }, $class;
+
+  for (0 .. ($opts{size}-1)) { push @{$board->{board}}, [ (undef) x $opts{size} ]; }
+  $board->{hoshi} = $board->_calc_hoshi;
+
+  return $board;
 }
 
 =head2 move
@@ -112,14 +124,14 @@ sub move {
 
     return $stat if !$stat;
     $self->{board}[$x][$y] = bless {
-        colour   => $self->{turn},
-        move     => $self->{move},
-		xy       => [$x, $y],
-        board    => $self
+	  colour   => $self->{turn},
+	  move     => $self->{move},
+	  xy       => [$x, $y],
+	  board    => $self
     }, "Games::Goban::Piece";
     push @{$self->{moves}}, { 
-		player => $self->{turn},
-		piece => $self->{board}[$x][$y]
+	  player => $self->{turn},
+	  piece => $self->{board}[$x][$y]
 	};
     $self->{move}++;
     $self->{turn} = $self->{turn} eq "b" ? "w" : "b";

@@ -1,15 +1,5 @@
 Revision history for Perl extension Games::Goban.
 
-0.05  2004-01-15 10:57:39
-	- callbacks are implemented, along with a simple test
-	- a board->pass method has been implemented
-	- the internal storage of moves and callbacks has been changed
-0.04  2004-01-13 23:07:49
-	- board is now stored as an arrayref of arrayrefs
-	- private methods collected, documented, and made more sensible
-	- skip_i property added
-	- sgf output refined; 'i' is always a valid axis value in sgf
-	- added (probably excessive) integrity check in private.t
 0.03  2003-12-05 16:47:10
     - rewrote hoshi calculation
 	- enabled arbitrary (integer, 4 < n < 27) board sizes

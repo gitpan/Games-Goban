@@ -1,10 +1,12 @@
-Changes
 lib/Games/Goban.pm
-Makefile.PL
-MANIFEST			This list of files
-META.yml
-t/callbacks.t
+lib/Games/Goban/Board.pm
 t/core.t
-t/hoshi.t
+t/board.t
+t/callbacks.t
 t/private.t
 t/synopsis.t
+t/hoshi.t
+Changes
+Makefile.PL
+MANIFEST
+META.yml                                 Module meta-data (added by MakeMaker)
