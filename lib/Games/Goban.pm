@@ -5,12 +5,12 @@ use 5.006;
 use strict;
 use warnings;
 use Carp;
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 my %types = (
-    go => 1,
-    othello => 2,
-    renju => 4,
-    gomoku => 4,
+    go		=> 1,
+    othello	=> 2,
+    renju	=> 4,
+    gomoku	=> 4,
 );
 
 =head1 NAME
@@ -28,7 +28,7 @@ Games::Goban - Board for playing go, renju, othello, etc.
                 referee => \&Games::Goban::Rules::Go,
   );
 
-  $board->play("pd"); $board->play("dd");
+  $board->move("pd"); $board->move("dd");
   print $board->as_sgf;
 
 =head1 DESCRIPTION

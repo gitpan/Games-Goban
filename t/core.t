@@ -1,19 +1,7 @@
-# Before `make install' is performed this script should be runnable with
-# `make test'. After `make install' it should work as `perl test.pl'
-
-#########################
-
-# change 'tests => 1' to 'tests => last_test_to_print';
-
-use Test;
-BEGIN { plan tests => 5 };
+use Test::More 'no_plan';
 use Games::Goban;
-ok(1); # If we made it this far, we're ok.
 
-#########################
-
-# Insert your test code below, the Test module is use()ed here so read
-# its man page ( perldoc Test ) for help writing this test script.
+use strict;
 
 my $x = new Games::Goban; 
 $x->move("pp");
@@ -51,11 +39,11 @@ ok($x->as_text eq <<EOF);
 . . . . . . . . . . . . . . . . . . . 
 EOF
 
-my $x = new Games::Goban (size=>9); 
-eval {$x->move("pp")};
+my $y = new Games::Goban (size=>9); 
+eval {$y->move("pp")};
 ok($@);
-$x->move("ab");
-ok($x->as_text eq <<EOF);
+$y->move("ab");
+ok($y->as_text eq <<EOF);
 . . . . . . . . . 
 X). . . . . . . . 
 . . + . . . + . . 
