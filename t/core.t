@@ -1,27 +1,32 @@
-use Test::More tests => 4;
+use Test::More tests => 10;
 use Games::Goban;
 
 use strict;
 
-my $x = new Games::Goban; 
-$x->move("pp");
-$x->move("pd"); 
-$x->move("dp"); 
-$x->move("jj"); 
-ok($x->as_sgf eq <<EOF, "simple SGF file");
-(;GM[1]FF[4]AP[Games::Goban]SZ[19]
-PW[Miss White]PB[Mr. Black]
-;B[pp]CR[pp]
-;W[pd]CR[pd]
-;B[dp]CR[dp]
-;W[jj]CR[jj])
+my $board = Games::Goban->new(skip_i => 0);
+$board->move("pp");
+$board->move("pd"); 
+$board->move("dp"); 
+$board->move("jj"); 
+
+isa_ok($board, 'Games::Goban');
+
+is($board->get('aa'),undef, "nothing at 'aa'");
+is($board->get('ap'),undef, "nothing at 'ap'");
+is($board->get('pa'),undef, "nothing at 'pa'");
+isa_ok($board->get('pp'),'Games::Goban::Piece');
+isa_ok($board->get('dp'),'Games::Goban::Piece');
+
+is($board->as_sgf, <<EOF, "simple SGF file");
+(;GM[1]FF[4]AP[Games::Goban]SZ[19]PB[Mr. Black]PW[Miss White]
+;B[pp];W[pd];B[dp];W[jj])
 EOF
 
-ok($x->as_text eq <<EOF, "simple text diagram");
+is($board->as_text, <<EOF, "simple text diagram");
 . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . 
-. . . + . . . . . + . . . . . O . . . 
+. . . X . . . . . + . . . . . X . . . 
 . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . 
@@ -33,24 +38,24 @@ ok($x->as_text eq <<EOF, "simple text diagram");
 . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . 
-. . . X . . . . . + . . . . . X . . . 
+. . . + . . . . . + . . . . . O . . . 
 . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . 
 EOF
 
-my $y = new Games::Goban (size=>9); 
-eval {$y->move("pp")};
-ok($@,"invalid move attempt");
-$y->move("ab");
-ok($y->as_text eq <<EOF,"small text diagram");
+my $small_board = new Games::Goban (size=>9); 
+eval { $small_board->move("pp"); };
+like($@,qr/position '..' not on board/,"invalid move attempt");
+$small_board->move("ab");
+ok($small_board->as_text eq <<EOF,"small text diagram");
 . . . . . . . . . 
-X). . . . . . . . 
+. . . . . . . . . 
 . . + . . . + . . 
 . . . . . . . . . 
 . . . . + . . . . 
 . . . . . . . . . 
 . . + . . . + . . 
-. . . . . . . . . 
+X). . . . . . . . 
 . . . . . . . . . 
 EOF

@@ -5,7 +5,7 @@ use 5.006;
 use strict;
 use warnings;
 use Carp;
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 my %types = (
     go		=> 1,
     othello	=> 2,
@@ -49,6 +49,7 @@ values (* marks defaults):
     game       *go, othello, renju, gomoku
     white      Any text, default: "Miss White"
     black      Any text, default: "Mr Black"
+	skip_i     Truth value; whether 'i' should be skipped; false by default
     referee    Any subroutine, default: sub {1} # (All moves are valid) 
 
 The referee subroutine takes a board object and a piece object, and
@@ -68,9 +69,8 @@ sub new {
     my $game = lc $opts{game} || 'go';
     croak "Unknown game $game" unless exists $types{$game};
     
-    return bless {
+    my $board = bless {
         game => $game,
-        board => {},
         moves => [],
         size => $size,
         black => $opts{black} || "Mr. Black",
@@ -80,8 +80,13 @@ sub new {
         move => 1,
         magiccookie => "a0000",
         turn => 'b',
-        hoshi => _calc_hoshi($size)
+		skip_i => (defined $opts{skip_i} ? $opts{skip_i} : 0)
     }, $class;
+
+	for (0 .. ($size-1)) { push @{$board->{board}}, [ (undef) x $size ]; }
+	$board->{hoshi} = $board->_calc_hoshi;
+
+	return $board;
 }
 
 =head2 move
@@ -97,31 +102,21 @@ true.
 
 =cut
 
-sub _check_pos {
-    my $size = (shift)->{size};
-    my $limit = chr($size+ORIGIN-1);
-    my $move = lc shift;
-    if ($move !~ /^([a-z])([a-z])$/ or !($1 le $limit and $2 le $limit)) 
-    {
-        local $Carp::CarpLevel=2;
-        croak "Move $move not on board";
-    }
-    
-    return $move;
-}
-
 sub move {
     my ($self, $move) = @_;
-    $move = _check_pos($self,$move);
+	my ($x,$y) = $self->_pos2grid($move, $self->skip_i);
+
+    $self->_check_pos($move);
     my $stat = $self->{referee}->($self,$move);
+
     return $stat if !$stat;
-    $self->{board}{$move} = bless {
-        colour => $self->{turn},
-        move  => $self->{move},
-        position => $move,
-        board => $self
+    $self->{board}[$x][$y] = bless {
+        colour   => $self->{turn},
+        move     => $self->{move},
+		xy       => [$x, $y],
+        board    => $self
     }, "Games::Goban::Piece";
-    push @{$self->{moves}}, $self->{board}{$move};
+    push @{$self->{moves}}, $self->{board}[$x][$y];
     $self->{move}++;
     $self->{turn} = $self->{turn} eq "b" ? "w" : "b";
 }
@@ -132,15 +127,18 @@ sub move {
 
 Gets the C<Games::Goban::Piece> object at the given location, if there
 is one. Locations are specified as per SGF - a 19x19 board starts from
-C<aa> in the top left corner, with C<tt> in the bottom right. C<i> does
-not exist.
+C<aa> in the top left corner, with C<ss> in the bottom right.  (If the skip_i
+option was set while creating the board, C<tt> is the bottom right and there
+are no C<i> positions.  This allows for traditional notation.)
 
 =cut
 
 sub get {
-    my ($self, $pos) = @_;
-    $pos = _check_pos($self,$pos);
-    return $self->{board}->{$pos};
+   	my ($self, $pos) = @_;
+	my ($x,$y) = $self->_pos2grid($pos,$self->skip_i);
+	$self->_check_grid($x, $y);
+
+	return $self->{board}[$x][$y];
 }
 
 =head2 size
@@ -161,40 +159,11 @@ Returns a list of hoshi points.
 
 =cut
 
-sub _calc_hoshi {
-	my $size = shift;
-	my $half = ($size + 1) / 2;
+sub hoshi {
+	my $self = shift;
 
-	my @hoshi = ();
-
-	sub n2t { my ($x,$y) = @_; return chr(ORIGIN - 1 + $x) . chr(ORIGIN - 1 + $y); }
-
-	if ($size % 2) { push @hoshi, n2t( $half, $half ); } # middle center
-
-	my $margin = ($size > 11 ? 4 : ($size > 6 ? 3 : ($size > 4 ? 2 : undef)));
-
-	return \@hoshi unless $margin;
-	
-	push @hoshi, (
-		n2t($margin,$margin), # top left
-		n2t($size-$margin+1, $margin ), # top right
-		n2t($margin, $size-$margin+1 ), # bottom left
-		n2t($size-$margin+1, $size-$margin+1 ) # bottom right
-	);
-
-	if (($size % 2) && ($size > 9)) {
-		push @hoshi, (
-			n2t( $half, $margin ), # top center
-			n2t( $margin, $half ), # middle left
-			n2t( $size - $margin+1, $half ), # middle right
-			n2t( $half, $size - $margin+1 ) # bottom center
-		);
-	}
-
-	return \@hoshi;
+	map { $self->_grid2pos( @$_, $self->skip_i ) } @{$self->{hoshi}};
 }
-
-sub hoshi { @{$_[0]->{hoshi}}; }
 
 =head2 is_hoshi
 
@@ -220,11 +189,15 @@ Returns a representation of the board as an SGF (Smart Game Format) file.
 
 sub as_sgf {
     my $self = shift;
-return "(;GM[$types{$self->{game}}]FF[4]AP[Games::Goban]SZ[$self->{size}]
-PW[$self->{white}]PB[$self->{black}]\n".
-(join "\n", map { ";".uc($_->color) ."[".$_->position."]CR[".$_->position."]" }
- @{$self->{moves}})
-.")\n"
+	my $sgf;
+
+	$sgf .= "(;GM[$types{$self->{game}}]FF[4]AP[Games::Goban]SZ[$self->{size}]PB[$self->{black}]PW[$self->{white}]\n";
+	foreach (@{$self->{moves}}) {
+		$sgf .= ";" . uc($_->color) .  "[".  $self->_grid2pos(@{$_->_xy},0) . "]";
+	}
+	$sgf .= ")\n";
+	
+	return $sgf;
 }
 
 =head2 as_text
@@ -233,8 +206,8 @@ PW[$self->{white}]PB[$self->{black}]\n".
 
 Returns a printable text picture of the board, similar to that printed
 by C<gnugo>. Black pieces are represented by C<X>, white pieces by C<O>,
-and the latest move is bracketed. I<hoshi> points are in their normal
-position for Go, and printed as an C<+>. Coordinates are not printed by
+and the latest move is enclosed in parentheses. I<hoshi> points are in their
+normal position for Go, and printed as an C<+>. Coordinates are not printed by
 default, but can be enabled as suggested in the synopsis.
 
 =cut
@@ -244,22 +217,26 @@ sub as_text {
     my %opts = @_;
 	my @hoshi = $board->hoshi;
     my $text;
-    for my $y ('a'..chr($board->size + ORIGIN - 1)) {
-        $text .= sprintf("%2i: ", $board->size - (ord($y) - ORIGIN)) 
-            if $opts{coords};
-        for my $x ('a'..chr($board->size + ORIGIN - 1)) {
-            my $p = $board->get("$x$y");
+    for (my $y = $board->size - 1; $y >= 0; $y--) {
+        $text .= substr($board->_grid2pos(0,$y,$board->skip_i),1,1) . ': ' if $opts{coords};
+		for my $x (0 .. ($board->size - 1)) {
+			my $pos = $board->_grid2pos($x,$y,$board->skip_i);
+            my $p = $board->get($pos);
             if ($p and $p->move == $board->{move}-1 and $text and substr($text,-1,1) ne "\n") { chop $text; $text.="("; }
             $text .= ($p ? 
                 ($p->color eq "b" ? "X" : "O") : 
-                ($board->is_hoshi("$x$y") ? "+" : "."))." ";
+                ($board->is_hoshi($pos) ? "+" : "."))." ";
             if ($p and $p->move == $board->{move}-1) { chop $text; $text.=")"; }
         }
         $text .= "\n";
     }
+	if ($opts{coords}) {
+		$text .= '   ';
+		for (0 .. ($board->size - 1)) { $text .= substr($board->_grid2pos($_,0,$board->skip_i),0,1) . ' '; }
+        $text .= "\n";
+	}
     return $text;
 }
-
 
 =head2 register
 
@@ -301,16 +278,6 @@ move along, nothing to see here.
 
 =cut
 
-sub _iterboard (&$) {
-    my ($sub, $board) = @_;
-    for my $x ('a'..chr($board->size + ord("a") - 1)) {
-        for my $y ('a'..chr($board->size + ord("a") - 1)) {
-            $sub->($board->get("$x$y"));
-        }
-    }
-
-}
-
 sub hash {
     my $board = shift;
     my $hash = chr(0) x 91;
@@ -321,6 +288,125 @@ sub hash {
         $bit += 3;
     } $board;
     return $hash;
+}
+
+=head2 skip_i
+
+This method returns true if the 'skip_i' argument to the constructor was true
+and the 'i' coordinant should be skipped.  (Note that 'i' is never skipped when
+producing SGF output.)
+
+=cut
+
+sub skip_i { return (shift)->{skip_i} }
+
+# This method accepts a position string and checks whether it is a valid
+# position on the given board.  If it is, 1 is returned.  Otherwise, it carps
+# that the position is not on the board.  It does this by calling _check_grid,
+# also below.
+
+sub _check_pos {
+    my $self = shift;
+	my $pos  = shift;
+	
+	my ($x, $y) = $self->_pos2grid($pos,$self->skip_i);
+
+	return $self->_check_grid($x,$y);
+}
+
+sub _check_grid {
+	my $self = shift;
+	my ($x, $y) = @_;
+
+	return 1 if 
+		(($x < $self->size) and ($y < $self->size));
+	
+	croak "position '" . $self->_grid2pos($x,$y,$self->skip_i) . "' not on board";
+}
+
+# This method returns a list of the hoshi points that should be found on the
+# board, given its size.
+
+sub _calc_hoshi {
+	my $self = shift;
+	my $size = $self->size;
+	my $half = ($size - 1) / 2;
+
+	my @hoshi = ();
+
+	if ($size % 2) { push @hoshi, [ $half, $half ]; } # middle center
+
+	my $margin = ($size > 11 ? 4 : ($size > 6 ? 3 : ($size > 4 ? 2 : undef)));
+
+	return \@hoshi unless $margin;
+	
+	push @hoshi, (
+		[ $margin-1,     $margin-1     ], # top left
+		[ $size-$margin, $margin-1     ], # top right
+		[ $margin-1,     $size-$margin ], # bottom left
+		[ $size-$margin, $size-$margin ]  # bottom right
+	);
+
+	if (($size % 2) && ($size > 9)) {
+		push @hoshi, (
+			[ $half,         $margin-1 ],    # top center
+			[ $margin-1,     $half ],        # middle left
+			[ $size-$margin, $half ],        # middle right
+			[ $half,         $size-$margin ] # bottom center
+		);
+	}
+
+	return \@hoshi;
+}
+
+# This subroutine passes every findable square on the board to the supplied
+# subroutine reference.
+
+sub _iterboard (&$) {
+    my ($sub, $board) = @_;
+    for my $x ('a'..chr($board->size + ord("a") - 1)) {
+        for my $y ('a'..chr($board->size + ord("a") - 1)) {
+            $sub->($board->get("$x$y"));
+        }
+    }
+
+}
+
+# This method accepts an (x,y) position, starting with (0,0) and returns the 
+# 'xy' text representing it.
+# The third parameter, if true, indicates that 'i' should be skipped.
+
+sub _grid2pos {
+	my $self = shift;
+	my ($x,$y,$skip_i) = @_;
+
+	if ($skip_i) {
+		for ($x,$y) {
+			$_++ if ($_ >= 8);
+		}
+	}
+
+	return chr(ORIGIN + $x) . chr(ORIGIN + $y);
+}
+
+# This method accepts an 'xy' position string and returns the (x,y) indexes
+# where that position falls in the board.
+# The second parameter, if true, indicates that 'i' should be skipped.
+
+sub _pos2grid {
+	my $self = shift;
+	my ($pos,$skip_i) = @_;
+
+	my ($xc,$yc) = (lc($pos) =~ /^([a-z])([a-z])$/);
+	my ($x,$y);
+
+	$x = ord($xc) - ORIGIN;
+	$x-- if ($skip_i and ($x > 8));
+
+	$y = ord($yc) - ORIGIN;
+	$y-- if ($skip_i and ($y > 8));
+
+	return ($x,$y);
 }
 
 package Games::Goban::Piece;
@@ -362,7 +448,13 @@ one in that position.
 
 =cut
 
-sub position { $_[0]->{position} }
+sub position {
+	my $piece = shift;
+
+	$piece->board->_grid2pos(@{$piece->_xy},$piece->board->skip_i);
+}
+
+sub _xy { $_[0]->{xy} }
 
 =head1 move
 
@@ -381,6 +473,28 @@ Returns the board object whence this piece came.
 sub board { $_[0]->{board} }
 
 1;
+
+=head1 TODO
+
+=over
+
+=item * 
+
+add C<<$board->pass>>
+
+=item *
+
+possibly enable C<<$board->move('')>> to pass
+
+=item *
+
+produce example referee
+
+=item *
+
+produce sample method for removing captured stones
+
+=back
 
 =head1 SEE ALSO
 
