@@ -5,7 +5,7 @@ use 5.006;
 use strict;
 use warnings;
 use Carp;
-our $VERSION = sprintf "%d.%03d", q$Revision: 1.4 $ =~ /(\d+)/g;
+our $VERSION = sprintf "%d.%03d", q$Revision: 1.5 $ =~ /(\d+)/g;
 
 our $piececlass = 'Games::Goban::Piece';
 
@@ -516,6 +516,10 @@ sub board { $_[0]->{board} }
 =head1 TODO
 
 =over
+
+=item *
+
+use Games::Goban::Board for game board
 
 =item * 
 

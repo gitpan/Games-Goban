@@ -1,11 +1,11 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Games-Goban
-version:      1.004
+version:      1.005
 version_from: lib/Games/Goban.pm
 installdirs:  site
 requires:
-    Games::Board:                  1.008
+    Games::Board::Grid:            1.003
 
 distribution_type: module
 generated_by: ExtUtils::MakeMaker version 6.17

@@ -10,7 +10,7 @@ Games::Goban::Board -- a go board built from Games::Board
 
   use Games::Goban::Board;
 
-  my $board = Games::Board->new(size => 19);
+  my $board = Games::Goban::Board->new(size => 19);
 
   # etc
 
