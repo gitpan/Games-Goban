@@ -1,0 +1,6 @@
+Revision history for Perl extension Games::Goban.
+
+0.01  Sat Jun  1 11:50:01 2002
+	- original version; created by h2xs 1.21 with options
+		-XA -n Games::Goban
+
