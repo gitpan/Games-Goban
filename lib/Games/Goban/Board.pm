@@ -35,7 +35,7 @@ Games::Goban's consumption.
 
 =cut
 
-our $origin = ord('a');
+my $origin = ord('a');
 
 sub piececlass { 'Games::Goban::Piece' }
 
@@ -72,7 +72,7 @@ sub id2index {
 package Games::Goban::Piece;
 use base qw(Games::Board::Piece);
 
-our $next_id = 0;
+my $next_id = 0;
 
 sub new {
   my ($class, %args) = @_;

@@ -5,9 +5,9 @@ use 5.006;
 use strict;
 use warnings;
 use Carp;
-our $VERSION = sprintf "%d.%03d", q$Revision: 1.6 $ =~ /(\d+)/g;
+our $VERSION = sprintf "%d.%03d", q$Revision: 1.7 $ =~ /(\d+)/g;
 
-our $piececlass = 'Games::Goban::Piece';
+my $piececlass = 'Games::Goban::Piece';
 
 our %types = (
   go      => 1,

@@ -1,3 +1,4 @@
+README
 lib/Games/Goban.pm
 lib/Games/Goban/Board.pm
 t/core.t
@@ -6,6 +7,8 @@ t/callbacks.t
 t/private.t
 t/synopsis.t
 t/hoshi.t
+t/pod.t
+t/pod-coverage.t
 Changes
 Makefile.PL
 MANIFEST
