@@ -5,7 +5,7 @@ use 5.006;
 use strict;
 use warnings;
 use Carp;
-our $VERSION = sprintf "%d.%03d", q$Revision: 1.5 $ =~ /(\d+)/g;
+our $VERSION = sprintf "%d.%03d", q$Revision: 1.6 $ =~ /(\d+)/g;
 
 our $piececlass = 'Games::Goban::Piece';
 
@@ -115,28 +115,30 @@ true.
 =cut
 
 sub move {
-    my ($self, $move) = @_;
+	my ($self, $move) = @_;
 
 	my ($x,$y) = $self->_pos2grid($move, $self->skip_i);
 
-    $self->_check_pos($move);
-    my $stat = $self->{referee}->($self,$move);
+	$self->_check_pos($move);
+ 	my $stat = $self->{referee}->($self,$move);
 
-    return $stat if !$stat;
-    $self->{board}[$x][$y] = bless {
-	  colour   => $self->{turn},
-	  move     => $self->{move},
-	  xy       => [$x, $y],
-	  board    => $self
-    }, "Games::Goban::Piece";
-    push @{$self->{moves}}, { 
-	  player => $self->{turn},
-	  piece => $self->{board}[$x][$y]
+ 	return $stat if !$stat;
+ 	$self->{board}[$x][$y] = bless {
+		colour   => $self->{turn},
+		move     => $self->{move},
+		xy       => [$x, $y],
+		board    => $self
+ 	}, "Games::Goban::Piece";
+	push @{$self->{moves}}, { 
+		player => $self->{turn},
+		piece => $self->{board}[$x][$y]
 	};
-    $self->{move}++;
-    $self->{turn} = $self->{turn} eq "b" ? "w" : "b";
+ 	$self->{move}++;
+ 	$self->{turn} = $self->{turn} eq "b" ? "w" : "b";
 
 	while (my ($key, $cb) = each %{$self->{callbacks}}) { $cb->($key,$self) }
+
+	return 1;
 }
 
 =head2 pass
