@@ -5,7 +5,7 @@ use 5.006;
 use strict;
 use warnings;
 use Carp;
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 my %types = (
     go		=> 1,
     othello	=> 2,
@@ -45,7 +45,7 @@ restricted in order to keep it simple.
 Creates and initializes a new goban. The options and their legal
 values (* marks defaults):
 
-    size       9, 11, 13, 15, 17, *19 
+    size       Any integer between 5 and 26, default: 19
     game       *go, othello, renju, gomoku
     white      Any text, default: "Miss White"
     black      Any text, default: "Mr Black"
@@ -61,8 +61,8 @@ sub new {
     my $class = shift;
     my %opts = @_;
     my $size = $opts{size} || 19;
-    unless (grep {$size == $_} (9,11,13,15,17,19)) {
-        croak "Illegal size $size (must be in 9,11,13,15,17,19)";
+	unless (($size !~ /\D/) and ($size > 4) and ($size <= 26)) {
+        croak "Illegal size $size (must be integer > 4)";
     }
 
     my $game = lc $opts{game} || 'go';
@@ -80,7 +80,7 @@ sub new {
         move => 1,
         magiccookie => "a0000",
         turn => 'b',
-        
+        hoshi => _calc_hoshi($size)
     }, $class;
 }
 
@@ -153,6 +153,63 @@ Returns the size of the goban.
 
 sub size { $_[0]->{size} }
 
+=head2 hoshi
+
+	@hoshi_points = $board->hoshi
+
+Returns a list of hoshi points.
+
+=cut
+
+sub _calc_hoshi {
+	my $size = shift;
+	my $half = ($size + 1) / 2;
+
+	my @hoshi = ();
+
+	sub n2t { my ($x,$y) = @_; return chr(ORIGIN - 1 + $x) . chr(ORIGIN - 1 + $y); }
+
+	if ($size % 2) { push @hoshi, n2t( $half, $half ); } # middle center
+
+	my $margin = ($size > 11 ? 4 : ($size > 6 ? 3 : ($size > 4 ? 2 : undef)));
+
+	return \@hoshi unless $margin;
+	
+	push @hoshi, (
+		n2t($margin,$margin), # top left
+		n2t($size-$margin+1, $margin ), # top right
+		n2t($margin, $size-$margin+1 ), # bottom left
+		n2t($size-$margin+1, $size-$margin+1 ) # bottom right
+	);
+
+	if (($size % 2) && ($size > 9)) {
+		push @hoshi, (
+			n2t( $half, $margin ), # top center
+			n2t( $margin, $half ), # middle left
+			n2t( $size - $margin+1, $half ), # middle right
+			n2t( $half, $size - $margin+1 ) # bottom center
+		);
+	}
+
+	return \@hoshi;
+}
+
+sub hoshi { @{$_[0]->{hoshi}}; }
+
+=head2 is_hoshi
+
+	$star = $board->is_hoshi('dp')
+
+Returns true if the named position is a hoshi (star) point.
+
+=cut
+
+sub is_hoshi { 
+	my $board = shift;
+	my $point = shift;
+	return 1 if grep( /^$point$/, $board->hoshi);
+}
+
 =head2 as_sgf
 
     $sgf = $board->as_sgf;
@@ -182,16 +239,10 @@ default, but can be enabled as suggested in the synopsis.
 
 =cut
 
-sub _is_hoshi {
-    my ($size, $xy) = @_;
-    return 1 if $xy =~ /[cg][cg]/ and $size eq 9;
-    return 1 if $xy =~ /[dgk][dgk]/ and $size eq 13;
-    return 1 if $xy =~ /[djp][djp]/ and $size eq 19;
-}
-
 sub as_text {
     my $board = shift;
     my %opts = @_;
+	my @hoshi = $board->hoshi;
     my $text;
     for my $y ('a'..chr($board->size + ORIGIN - 1)) {
         $text .= sprintf("%2i: ", $board->size - (ord($y) - ORIGIN)) 
@@ -201,7 +252,7 @@ sub as_text {
             if ($p and $p->move == $board->{move}-1 and $text and substr($text,-1,1) ne "\n") { chop $text; $text.="("; }
             $text .= ($p ? 
                 ($p->color eq "b" ? "X" : "O") : 
-                (_is_hoshi($board->size, "$x$y") ? "+" : "."))." ";
+                ($board->is_hoshi("$x$y") ? "+" : "."))." ";
             if ($p and $p->move == $board->{move}-1) { chop $text; $text.=")"; }
         }
         $text .= "\n";
@@ -342,4 +393,5 @@ The US Go Association: http://www.usgo.org/
 =head1 AUTHOR
 
 Simon Cozens, C<simon@cpan.org>
+Ricardo Signes, C<rjbs@cpan.org>
 
