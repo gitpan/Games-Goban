@@ -5,8 +5,10 @@ use strict;
 
 my $board = Games::Goban->new(skip_i => 0);
 $board->move("pp");
+$board->pass;
 $board->move("pd"); 
 $board->move("dp"); 
+$board->pass;
 $board->move("jj"); 
 
 isa_ok($board, 'Games::Goban');
@@ -19,14 +21,14 @@ isa_ok($board->get('dp'),'Games::Goban::Piece');
 
 is($board->as_sgf, <<EOF, "simple SGF file");
 (;GM[1]FF[4]AP[Games::Goban]SZ[19]PB[Mr. Black]PW[Miss White]
-;B[pp];W[pd];B[dp];W[jj])
+;B[pp];W[];B[pd];W[dp];B[];W[jj])
 EOF
 
 is($board->as_text, <<EOF, "simple text diagram");
 . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . 
-. . . X . . . . . + . . . . . X . . . 
+. . . O . . . . . + . . . . . X . . . 
 . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . 
@@ -38,7 +40,7 @@ is($board->as_text, <<EOF, "simple text diagram");
 . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . 
-. . . + . . . . . + . . . . . O . . . 
+. . . + . . . . . + . . . . . X . . . 
 . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . 

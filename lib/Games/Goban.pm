@@ -5,7 +5,7 @@ use 5.006;
 use strict;
 use warnings;
 use Carp;
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 my %types = (
     go		=> 1,
     othello	=> 2,
@@ -75,7 +75,7 @@ sub new {
         size => $size,
         black => $opts{black} || "Mr. Black",
         white => $opts{white} || "Miss White",
-        callbacks => [],
+        callbacks => {},
         referee => $opts{referee} || sub { 1 },
         move => 1,
         magiccookie => "a0000",
@@ -104,6 +104,7 @@ true.
 
 sub move {
     my ($self, $move) = @_;
+
 	my ($x,$y) = $self->_pos2grid($move, $self->skip_i);
 
     $self->_check_pos($move);
@@ -116,8 +117,31 @@ sub move {
 		xy       => [$x, $y],
         board    => $self
     }, "Games::Goban::Piece";
-    push @{$self->{moves}}, $self->{board}[$x][$y];
+    push @{$self->{moves}}, { 
+		player => $self->{turn},
+		piece => $self->{board}[$x][$y]
+	};
     $self->{move}++;
+    $self->{turn} = $self->{turn} eq "b" ? "w" : "b";
+
+	while (my ($key, $cb) = each %{$self->{callbacks}}) { $cb->($key,$self) }
+}
+
+=head2 pass
+
+This method causes the current player to pass.  At present, nothing happens for
+two subsequent passes.
+
+=cut
+
+sub pass {
+	my $self = shift;
+
+	push @{$self->{moves}}, {
+		player => $self->{turn},
+		piece => undef
+	};
+	$self->{move}++;
     $self->{turn} = $self->{turn} eq "b" ? "w" : "b";
 }
 
@@ -193,7 +217,8 @@ sub as_sgf {
 
 	$sgf .= "(;GM[$types{$self->{game}}]FF[4]AP[Games::Goban]SZ[$self->{size}]PB[$self->{black}]PW[$self->{white}]\n";
 	foreach (@{$self->{moves}}) {
-		$sgf .= ";" . uc($_->color) .  "[".  $self->_grid2pos(@{$_->_xy},0) . "]";
+		$sgf .= ";" . uc($_->{player}) .  "[".  ($_->{piece} ?
+		$self->_grid2pos(@{$_->{piece}->_xy},0) : '') . "]";
 	}
 	$sgf .= ")\n";
 	
@@ -242,16 +267,18 @@ sub as_text {
 
     my $key = $board->register(\&callback);
 
-Register a calllback to be called after every move is made. This is
-useful for analysis programs which wish to maintain statistics on the
-board state. The C<key> returned from this can be fed to...
+Register a callback to be called after every move is made. This is useful for
+analysis programs which wish to maintain statistics on the board state. The
+C<key> returned from this can be fed to...
 
 =cut
 
 sub register {
     my ($board, $cb) = @_;
-    push @{$board->{callbacks}}, $cb;
-    return ++$board->{magiccookie};
+	my $key = ++$board->{magiccookie};
+	$board->{callbacks}{$key} = $cb;
+	$board->{notes}->{$key} = {};
+	return $key;
 }
 
 =head2 notes

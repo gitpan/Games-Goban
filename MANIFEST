@@ -1,9 +1,10 @@
 Changes
-Games-Goban-0.03_1.tar.gz
 lib/Games/Goban.pm
 Makefile.PL
-MANIFEST
-META.yml			Module meta-data (added by MakeMaker)
+MANIFEST			This list of files
+META.yml
+t/callbacks.t
 t/core.t
 t/hoshi.t
 t/private.t
+t/synopsis.t
