@@ -1,3 +1,5 @@
+use strict;
+use warnings;
 
 package Games::Goban::Board;
 use base qw(Games::Board::Grid);
@@ -5,6 +7,14 @@ use base qw(Games::Board::Grid);
 =head1 NAME
 
 Games::Goban::Board -- a go board built from Games::Board
+
+=head1 VERSION
+
+  $Id: /my/cs/projects/goban/trunk/lib/Games/Goban/Board.pm 28023 2006-11-14T22:56:30.198282Z rjbs  $
+
+=cut
+
+our $VERSION = '1.100';
 
 =head1 SYNOPSIS
 
@@ -23,9 +33,6 @@ This module provides a class for representing a go board and pieces.
 
 =cut
 
-use strict;
-use warnings;
-
 =head1 METHODS
 
 The methods of this class are not substantially changed from those of
@@ -43,8 +50,8 @@ sub new {
   my ($self, %opts) = @_;
 
   my $board = $self->SUPER::new(%opts);
-     $board->{skip_i} = defined $opts{skip_i} ? $opts{skip_i} : 0;
-	
+  $board->{skip_i} = defined $opts{skip_i} ? $opts{skip_i} : 0;
+
   $board;
 }
 
@@ -64,7 +71,7 @@ sub id2index {
   $id =~ tr/[j-t]/[i-s]/ if $self->{skip_i};
 
   my @loc = split //, $id;
-  
+
   $_ = ord($_) - $origin for @loc;
   \@loc;
 }
@@ -88,7 +95,7 @@ sub new {
   bless $self => $class;
 }
 
-sub notes { (shift)->{notes} }
+sub notes    { (shift)->{notes} }
 sub position { (shift)->current_space_id }
 
 sub moved_on { (shift)->{move} }
@@ -96,7 +103,7 @@ sub moved_on { (shift)->{move} }
 sub color  { my $self = shift; $self->{color} }
 sub colour { my $self = shift; $self->{color} }
 
-=head1 AUTHORS
+=head1 AUTHOR
 
 Ricardo SIGNES E<lt>rjbs@cpan.orgE<gt>
 
