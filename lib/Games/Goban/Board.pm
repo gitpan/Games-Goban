@@ -2,45 +2,13 @@ use strict;
 use warnings;
 
 package Games::Goban::Board;
-use base qw(Games::Board::Grid);
+{
+  $Games::Goban::Board::VERSION = '1.101';
+}
+use parent qw(Games::Board::Grid);
+# ABSTRACT: a go board built from Games::Board
 
-=head1 NAME
 
-Games::Goban::Board -- a go board built from Games::Board
-
-=head1 VERSION
-
-  $Id: /my/cs/projects/goban/trunk/lib/Games/Goban/Board.pm 28023 2006-11-14T22:56:30.198282Z rjbs  $
-
-=cut
-
-our $VERSION = '1.100';
-
-=head1 SYNOPSIS
-
-  use Games::Goban::Board;
-
-  my $board = Games::Goban::Board->new(size => 19);
-
-  # etc
-
-This class exists is primarily for use (for now) by Games::Goban, which
-currently implements its own board, badly.
-
-=head1 DESCRIPTION
-
-This module provides a class for representing a go board and pieces.
-
-=cut
-
-=head1 METHODS
-
-The methods of this class are not substantially changed from those of
-Games::Board.  Space id's are more go-like.  New pieces are blessed into the
-class Games::Goban::Piece, which provides a few historical methods for
-Games::Goban's consumption.
-
-=cut
 
 my $origin = ord('a');
 
@@ -77,6 +45,9 @@ sub id2index {
 }
 
 package Games::Goban::Piece;
+{
+  $Games::Goban::Piece::VERSION = '1.101';
+}
 use base qw(Games::Board::Piece);
 
 my $next_id = 0;
@@ -103,19 +74,61 @@ sub moved_on { (shift)->{move} }
 sub color  { my $self = shift; $self->{color} }
 sub colour { my $self = shift; $self->{color} }
 
-=head1 AUTHOR
+1;
 
-Ricardo SIGNES E<lt>rjbs@cpan.orgE<gt>
+__END__
 
-=head1 COPYRIGHT
+=pod
 
-Copyright 2004 by Ricardo Signes E<lt>rjbs@cpan.orgE<gt>
+=head1 NAME
 
-This program is free software; you can redistribute it and/or modify it under
-the same terms as Perl itself.
+Games::Goban::Board - a go board built from Games::Board
 
-See http://www.perl.com/perl/misc/Artistic.html
+=head1 VERSION
+
+version 1.101
+
+=head1 SYNOPSIS
+
+  use Games::Goban::Board;
+
+  my $board = Games::Goban::Board->new(size => 19);
+
+  # etc
+
+This class exists is primarily for use (for now) by Games::Goban, which
+currently implements its own board, badly.
+
+=head1 DESCRIPTION
+
+This module provides a class for representing a go board and pieces.
+
+=head1 METHODS
+
+The methods of this class are not substantially changed from those of
+Games::Board.  Space id's are more go-like.  New pieces are blessed into the
+class Games::Goban::Piece, which provides a few historical methods for
+Games::Goban's consumption.
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Simon Cozens
+
+=item *
+
+Ricardo SIGNES <rjbs@cpan.org>
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2002 by Simon Cozens.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut
-
-1;

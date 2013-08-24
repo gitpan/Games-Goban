@@ -1,19 +1,7 @@
 use strict;
 use warnings;
-
 package Games::Goban;
-
-=head1 NAME
-
-Games::Goban - Board for playing go, renju, othello, etc.
-
-=head1 VERSION
-
-version 1.100
-
-  $Id: /my/cs/projects/goban/trunk/lib/Games/Goban.pm 28023 2006-11-14T22:56:30.198282Z rjbs  $
-
-=cut
+# ABSTRACT: Board for playing go, renju, othello, etc.
 
 use 5.006;
 use Carp;
@@ -38,46 +26,6 @@ our %defaults = (
   referee => sub { 1 }
 );
 
-=head1 SYNOPSIS
-
-  use Games::Goban;
-  my $board = new Games::Goban ( 
-	size  => 19,
-	game  => "go",
-	white => "Seigen, Go",
-	black => "Minoru, Kitani",
-	referee => \&Games::Goban::Rules::Go,
-  );
-
-  $board->move("pd"); $board->move("dd");
-  print $board->as_sgf;
-
-=head1 DESCRIPTION
-
-This is a generic module for handling goban-based board games.
-Theoretically, it can be used to handle many of the other games which
-can use Smart Game Format (SGF) but I want to keep it reasonably
-restricted in order to keep it simple. 
-
-=head1 METHODS
-
-=head2 new(%options); 
-
-Creates and initializes a new goban. The options and their legal
-values (* marks defaults):
-
-  size       Any integer between 5 and 26, default: 19
-  game       *go, othello, renju, gomoku
-  white      Any text, default: "Miss White"
-  black      Any text, default: "Mr Black"
-  skip_i     Truth value; whether 'i' should be skipped; false by default
-  referee    Any subroutine, default: sub {1} # (All moves are valid) 
-
-The referee subroutine takes a board object and a piece object, and
-determines whether or not the move is legal. It also reports if the
-game is won.
-
-=cut
 
 sub new {
   my $class = shift;
@@ -112,18 +60,6 @@ sub new {
   return $board;
 }
 
-=head2 move
-
-    $ok = $board->move($position)
-
-Takes a move, creates a Games::Goban::Piece object, and attempts to
-place it on the board, subject to the constraints of the I<referee>. 
-If this is not successful, it returns C<0> and sets C<$@> to be an error
-message explaining why the move could not be made. If successful,
-updates the board, updates the move number and the turn, and returns
-true.
-
-=cut
 
 sub move {
   my ($self, $move) = @_;
@@ -154,12 +90,6 @@ sub move {
   return 1;
 }
 
-=head2 pass
-
-This method causes the current player to pass.  At present, nothing happens for
-two subsequent passes.
-
-=cut
 
 sub pass {
   my $self = shift;
@@ -173,17 +103,6 @@ sub pass {
   $self->{turn} = $self->{turn} eq "b" ? "w" : "b";
 }
 
-=head2 get
-
-    $move = $board->get($position)
-
-Gets the C<Games::Goban::Piece> object at the given location, if there
-is one. Locations are specified as per SGF - a 19x19 board starts from
-C<aa> in the top left corner, with C<ss> in the bottom right.  (If the skip_i
-option was set while creating the board, C<tt> is the bottom right and there
-are no C<i> positions.  This allows for traditional notation.)
-
-=cut
 
 sub get {
   my ($self, $pos) = @_;
@@ -193,23 +112,9 @@ sub get {
   return $self->{board}[$x][$y];
 }
 
-=head2 size
-
-    $size = $board->size
-
-Returns the size of the goban.
-
-=cut
 
 sub size { $_[0]->{size} }
 
-=head2 hoshi
-
-	@hoshi_points = $board->hoshi
-
-Returns a list of hoshi points.
-
-=cut
 
 sub hoshi {
   my $self = shift;
@@ -217,13 +122,6 @@ sub hoshi {
   map { $self->_grid2pos(@$_, $self->skip_i) } @{ $self->{hoshi} };
 }
 
-=head2 is_hoshi
-
-	$star = $board->is_hoshi('dp')
-
-Returns true if the named position is a hoshi (star) point.
-
-=cut
 
 sub is_hoshi {
   my $board = shift;
@@ -231,13 +129,6 @@ sub is_hoshi {
   return 1 if grep { /^$point$/ } $board->hoshi;
 }
 
-=head2 as_sgf
-
-    $sgf = $board->as_sgf;
-
-Returns a representation of the board as an SGF (Smart Game Format) file.
-
-=cut
 
 sub as_sgf {
   my $self = shift;
@@ -255,17 +146,6 @@ sub as_sgf {
   return $sgf;
 }
 
-=head2 as_text
-
-    print $board->as_text(coords => 1)
-
-Returns a printable text picture of the board, similar to that printed
-by C<gnugo>. Black pieces are represented by C<X>, white pieces by C<O>,
-and the latest move is enclosed in parentheses. I<hoshi> points are in their
-normal position for Go, and printed as an C<+>. Coordinates are not printed by
-default, but can be enabled as suggested in the synopsis.
-
-=cut
 
 sub as_text {
   my $board = shift;
@@ -305,15 +185,6 @@ sub as_text {
   return $text;
 }
 
-=head2 register
-
-    my $key = $board->register(\&callback);
-
-Register a callback to be called after every move is made. This is useful for
-analysis programs which wish to maintain statistics on the board state. The
-C<key> returned from this can be fed to...
-
-=cut
 
 sub register {
   my ($board, $cb) = @_;
@@ -323,29 +194,12 @@ sub register {
   return $key;
 }
 
-=head2 notes
-
-    $board->notes($key)->{score} += 5;
-
-C<notes> returns a hash reference which can be used by a callback to
-store local state about the board. 
-
-=cut
 
 sub notes {
   my ($board, $key) = @_;
   return $board->{notes}->{$key};
 }
 
-=head2 hash
-
-    $hash = $board->hash
-
-Provides a unique hash of the board position. If the phrase "positional
-superko" means anything to you, you want to use this method. If not,
-move along, nothing to see here.
-
-=cut
 
 sub hash {
   my $board = shift;
@@ -361,13 +215,6 @@ sub hash {
   return $hash;
 }
 
-=head2 skip_i
-
-This method returns true if the 'skip_i' argument to the constructor was true
-and the 'i' coordinant should be skipped.  (Note that 'i' is never skipped when
-producing SGF output.)
-
-=cut
 
 sub skip_i { return (shift)->{skip_i} }
 
@@ -484,42 +331,14 @@ sub _pos2grid {
 
 package Games::Goban::Piece;
 
-=head1 C<Games::Goban::Piece> methods
 
-Here are the methods which can be called on a C<Games::Goban::Piece>
-object, representing a piece on the board.
-
-=cut
-
-=head1 color
-
-Returns "b" for a black piece and "w" for a white. C<colour> is also
-provided for Anglophones.
-
-=cut
 
 sub color  { $_[0]->{colour} }
 sub colour { $_[0]->{colour} }
 
-=head1 notes
-
-Similar to the C<notes> method on the board class, this provides a 
-private area for callbacks to scribble on.
-
-=cut
 
 sub notes { $_[0]->{notes}->{ $_[1] } }
 
-=head1 position
-
-Returns the position of this piece, as a two-character string.
-Incidentally, try to avoid taking references to C<Piece> objects, since
-this stops them being destroyed in a timely fashion. Use a C<position>
-and C<get> if you can get away with it, or take a weak reference if
-you're worried about the piece going away or being replaced by another
-one in that position.
-
-=cut
 
 sub position {
   my $piece = shift;
@@ -530,23 +349,185 @@ sub position {
 
 sub _xy { $_[0]->{xy} }
 
-=head1 move
-
-Returns the move number on which this piece was played.
-
-=cut
 
 sub move { $_[0]->{move} }
 
-=head1 board
-
-Returns the board object whence this piece came.
-
-=cut
 
 sub board { $_[0]->{board} }
 
 1;
+
+__END__
+
+=pod
+
+=head1 NAME
+
+Games::Goban - Board for playing go, renju, othello, etc.
+
+=head1 VERSION
+
+version 1.101
+
+=head1 SYNOPSIS
+
+  use Games::Goban;
+  my $board = new Games::Goban ( 
+    size  => 19,
+    game  => "go",
+    white => "Seigen, Go",
+    black => "Minoru, Kitani",
+    referee => \&Games::Goban::Rules::Go,
+  );
+
+  $board->move("pd"); $board->move("dd");
+  print $board->as_sgf;
+
+=head1 DESCRIPTION
+
+This is a generic module for handling goban-based board games.
+Theoretically, it can be used to handle many of the other games which
+can use Smart Game Format (SGF) but I want to keep it reasonably
+restricted in order to keep it simple. 
+
+=head1 METHODS
+
+=head2 new(%options); 
+
+Creates and initializes a new goban. The options and their legal
+values (* marks defaults):
+
+  size       Any integer between 5 and 26, default: 19
+  game       *go, othello, renju, gomoku
+  white      Any text, default: "Miss White"
+  black      Any text, default: "Mr Black"
+  skip_i     Truth value; whether 'i' should be skipped; false by default
+  referee    Any subroutine, default: sub {1} # (All moves are valid) 
+
+The referee subroutine takes a board object and a piece object, and
+determines whether or not the move is legal. It also reports if the
+game is won.
+
+=head2 move
+
+    $ok = $board->move($position)
+
+Takes a move, creates a Games::Goban::Piece object, and attempts to
+place it on the board, subject to the constraints of the I<referee>. 
+If this is not successful, it returns C<0> and sets C<$@> to be an error
+message explaining why the move could not be made. If successful,
+updates the board, updates the move number and the turn, and returns
+true.
+
+=head2 pass
+
+This method causes the current player to pass.  At present, nothing happens for
+two subsequent passes.
+
+=head2 get
+
+    $move = $board->get($position)
+
+Gets the C<Games::Goban::Piece> object at the given location, if there
+is one. Locations are specified as per SGF - a 19x19 board starts from
+C<aa> in the top left corner, with C<ss> in the bottom right.  (If the skip_i
+option was set while creating the board, C<tt> is the bottom right and there
+are no C<i> positions.  This allows for traditional notation.)
+
+=head2 size
+
+    $size = $board->size
+
+Returns the size of the goban.
+
+=head2 hoshi
+
+  @hoshi_points = $board->hoshi
+
+Returns a list of hoshi points.
+
+=head2 is_hoshi
+
+  $star = $board->is_hoshi('dp')
+
+Returns true if the named position is a hoshi (star) point.
+
+=head2 as_sgf
+
+    $sgf = $board->as_sgf;
+
+Returns a representation of the board as an SGF (Smart Game Format) file.
+
+=head2 as_text
+
+    print $board->as_text(coords => 1)
+
+Returns a printable text picture of the board, similar to that printed
+by C<gnugo>. Black pieces are represented by C<X>, white pieces by C<O>,
+and the latest move is enclosed in parentheses. I<hoshi> points are in their
+normal position for Go, and printed as an C<+>. Coordinates are not printed by
+default, but can be enabled as suggested in the synopsis.
+
+=head2 register
+
+    my $key = $board->register(\&callback);
+
+Register a callback to be called after every move is made. This is useful for
+analysis programs which wish to maintain statistics on the board state. The
+C<key> returned from this can be fed to...
+
+=head2 notes
+
+    $board->notes($key)->{score} += 5;
+
+C<notes> returns a hash reference which can be used by a callback to
+store local state about the board. 
+
+=head2 hash
+
+    $hash = $board->hash
+
+Provides a unique hash of the board position. If the phrase "positional
+superko" means anything to you, you want to use this method. If not,
+move along, nothing to see here.
+
+=head2 skip_i
+
+This method returns true if the 'skip_i' argument to the constructor was true
+and the 'i' coordinant should be skipped.  (Note that 'i' is never skipped when
+producing SGF output.)
+
+=head1 C<Games::Goban::Piece> methods
+
+Here are the methods which can be called on a C<Games::Goban::Piece>
+object, representing a piece on the board.
+
+=head1 color
+
+Returns "b" for a black piece and "w" for a white. C<colour> is also
+provided for Anglophones.
+
+=head1 notes
+
+Similar to the C<notes> method on the board class, this provides a 
+private area for callbacks to scribble on.
+
+=head1 position
+
+Returns the position of this piece, as a two-character string.
+Incidentally, try to avoid taking references to C<Piece> objects, since
+this stops them being destroyed in a timely fashion. Use a C<position>
+and C<get> if you can get away with it, or take a weak reference if
+you're worried about the piece going away or being replaced by another
+one in that position.
+
+=head1 move
+
+Returns the move number on which this piece was played.
+
+=head1 board
+
+Returns the board object whence this piece came.
 
 =head1 TODO
 
@@ -582,8 +563,25 @@ C<Games::Go::SGF>
 
 The US Go Association: http://www.usgo.org/
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Simon Cozens, C<simon@cpan.org>
-Ricardo Signes, C<rjbs@cpan.org>
+=over 4
 
+=item *
+
+Simon Cozens
+
+=item *
+
+Ricardo SIGNES <rjbs@cpan.org>
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2002 by Simon Cozens.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
