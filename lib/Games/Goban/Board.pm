@@ -3,7 +3,7 @@ use warnings;
 
 package Games::Goban::Board;
 {
-  $Games::Goban::Board::VERSION = '1.101';
+  $Games::Goban::Board::VERSION = '1.102';
 }
 use parent qw(Games::Board::Grid);
 # ABSTRACT: a go board built from Games::Board
@@ -46,7 +46,7 @@ sub id2index {
 
 package Games::Goban::Piece;
 {
-  $Games::Goban::Piece::VERSION = '1.101';
+  $Games::Goban::Piece::VERSION = '1.102';
 }
 use base qw(Games::Board::Piece);
 
@@ -86,7 +86,7 @@ Games::Goban::Board - a go board built from Games::Board
 
 =head1 VERSION
 
-version 1.101
+version 1.102
 
 =head1 SYNOPSIS
 

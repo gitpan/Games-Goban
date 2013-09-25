@@ -1,11 +1,13 @@
 use strict;
 use warnings;
 package Games::Goban;
+{
+  $Games::Goban::VERSION = '1.102';
+}
 # ABSTRACT: Board for playing go, renju, othello, etc.
 
 use 5.006;
 use Carp;
-our $VERSION = '1.100';
 
 my $ORIGIN     = ord('a');
 my $piececlass = 'Games::Goban::Piece';
@@ -330,6 +332,9 @@ sub _pos2grid {
 }
 
 package Games::Goban::Piece;
+{
+  $Games::Goban::Piece::VERSION = '1.102';
+}
 
 
 
@@ -367,7 +372,7 @@ Games::Goban - Board for playing go, renju, othello, etc.
 
 =head1 VERSION
 
-version 1.101
+version 1.102
 
 =head1 SYNOPSIS
 
